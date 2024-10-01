@@ -3,6 +3,7 @@
 #include "../include/json.hpp"
 #include "../include/argparse.hpp"
 #include <SDL2/SDL.h>
+
 #define __CL_ENABLE_EXCEPTIONS
 #define CL_TARGET_OPENCL_VERSION 300
 #include <CL/cl.h>
@@ -38,16 +39,19 @@ cl_device_id device;
 cl_context context;
 cl_command_queue queue;
 cl_program program;
+
 cl_kernel laplace_kernel;
 cl_kernel update_kernel;
+
 cl_mem k_cells;
 cl_mem k_weights;
+
 size_t global_work_size[1];
 
 struct Cell
 {
-    cl_float a = 1, b = 0, lap_a = 0, lap_b = 0;
-    cl_int last_c = 255;
+    float a = 1, b = 0, lap_a = 0, lap_b = 0;
+    int last_c = 255;
 
     void seed_b()
     {
@@ -71,9 +75,22 @@ Cell *cells;
 
 void update()
 {
+
     clEnqueueWriteBuffer(queue, k_cells, CL_TRUE, 0, WIDTH * HEIGHT * sizeof(Cell), cells, 0, NULL, NULL);
+
+    clSetKernelArg(laplace_kernel, 0, sizeof(cl_mem), &k_cells);
+    clSetKernelArg(laplace_kernel, 1, sizeof(int), &WIDTH);
+    clSetKernelArg(laplace_kernel, 2, sizeof(int), &HEIGHT);
+    clSetKernelArg(laplace_kernel, 3, sizeof(cl_mem), &k_weights);
     clEnqueueNDRangeKernel(queue, laplace_kernel, 1, NULL, global_work_size, NULL, 0, NULL, NULL);
+
+    clSetKernelArg(update_kernel, 0, sizeof(cl_mem), &k_cells);
+    clSetKernelArg(update_kernel, 1, sizeof(float), &D_A);
+    clSetKernelArg(update_kernel, 2, sizeof(float), &D_B);
+    clSetKernelArg(update_kernel, 3, sizeof(float), &FEED);
+    clSetKernelArg(update_kernel, 4, sizeof(float), &KILL);
     clEnqueueNDRangeKernel(queue, update_kernel, 1, NULL, global_work_size, NULL, 0, NULL, NULL);
+
     clEnqueueReadBuffer(queue, k_cells, CL_TRUE, 0, WIDTH * HEIGHT * sizeof(Cell), cells, 0, NULL, NULL);
     clFinish(queue);
 
@@ -164,6 +181,7 @@ void InitOpenCL()
     {
         cout << "Couldn't build program!" << endl;
         size_t len;
+
         clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, NULL, NULL, &len);
         cout << len << endl;
         char buf[len];
@@ -192,17 +210,6 @@ void InitOpenCL()
     clEnqueueWriteBuffer(queue, k_weights, CL_TRUE, 0, 8 * sizeof(float), weights, 0, NULL, NULL);
     clFinish(queue);
 
-    clSetKernelArg(laplace_kernel, 0, sizeof(cl_mem), &k_cells);
-    clSetKernelArg(laplace_kernel, 1, sizeof(int), &WIDTH);
-    clSetKernelArg(laplace_kernel, 2, sizeof(int), &HEIGHT);
-    clSetKernelArg(laplace_kernel, 3, sizeof(float), &k_weights);
-
-    clSetKernelArg(update_kernel, 0, sizeof(cl_mem), &k_cells);
-    clSetKernelArg(update_kernel, 1, sizeof(float), &D_A);
-    clSetKernelArg(update_kernel, 2, sizeof(float), &D_B);
-    clSetKernelArg(update_kernel, 3, sizeof(float), &FEED);
-    clSetKernelArg(update_kernel, 4, sizeof(float), &KILL);
-
     global_work_size[0] = WIDTH * HEIGHT;
 }
 
@@ -221,7 +228,16 @@ void load_args(int argc, char *argv[])
     nlohmann::json config;
     fstream config_file;
 
-    config_file.open("../config.json", ios::in);
+    try
+    {
+        config_file.open("../config.json", ios::in);
+    }
+    catch (const std::exception &e)
+    {
+        cout << "Couldn't open config.json file. Exiting..." << endl;
+        exit(1);
+    }
+
     config_file >> config;
     config_file.close();
 
@@ -291,8 +307,9 @@ void load_args(int argc, char *argv[])
     {
         cout << err.what() << endl;
         cout << parser;
-        exit(0);
+        exit(1);
     }
+
     WIDTH = parser.get<int>("--width");
     HEIGHT = parser.get<int>("--height");
     FRAMES_TO_RENDER = parser.get<int>("--frames_to_render");
@@ -347,11 +364,13 @@ int main(int argc, char *argv[])
     while (1)
     {
         handle_events();
+
         if (SDL_GetTicks() - draw_timer > (float)(1000 / 60))
         {
             draw_screen();
             draw_timer = SDL_GetTicks();
         }
+
         update();
     }
 }
