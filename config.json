@@ -1,0 +1,100 @@
+{
+    "width": 512,
+    "height": 512,
+    "frames_to_render": -1,
+    "color": [100, 149, 237],
+    "defaultSystem": "Gliders",
+    "systems": {
+        "TrueCoral": {
+            "feed": 0.055,
+            "kill": 0.062,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/TrueCoral.png"
+        },
+        "CoralWorms": {
+            "feed": 0.05,
+            "kill": 0.063,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/CoralWorms.png"
+        },
+        "CoralShip": {
+            "feed": 0.058,
+            "kill": 0.063,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/CoralShip.png"
+        },
+        "Dots": {
+            "feed": 0.022,
+            "kill": 0.051,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/Dots.png"
+        },
+        "Flower": {
+            "feed": 0.038,
+            "kill": 0.061,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/Flower.png"
+        },
+        "Protein": {
+            "feed": 0.03,
+            "kill": 0.057,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/Protein.png"
+        },
+        "MitosisSlow": {
+            "feed": 0.026,
+            "kill": 0.061,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/MitosisSlow.png"
+        },
+        "MitosisOscillating": {
+            "feed": 0.018,
+            "kill": 0.055,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/MitosisOscillating.png"
+        },
+        "MitosisWorms": {
+            "feed": 0.034,
+            "kill": 0.065,
+            "init_shape": 1,
+            "init_size": 10,
+            "image": "gallery/MitosisWorms.png"
+        },
+        "MitosisFast": {
+            "feed": 0.014,
+            "kill": 0.053,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/MitosisFast.png"
+        },
+        "Gliders": {
+            "feed": 0.01,
+            "kill": 0.047,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/Gliders.png"
+        },
+        "ConcentricRings": {
+            "feed": 0.042,
+            "kill": 0.059,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/ConcentricRings.png"
+        },
+        "ConcentricRings2": {
+            "feed": 0.03,
+            "kill": 0.055,
+            "init_shape": 0,
+            "init_size": 10,
+            "image": "gallery/ConcentricRings2.png"
+        }
+    }
+}
