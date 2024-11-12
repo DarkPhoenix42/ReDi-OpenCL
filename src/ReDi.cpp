@@ -18,8 +18,8 @@ float FEED, KILL;
 const float weights[8] = {0.05, 0.2, 0.05, 0.2, 0.2, 0.05, 0.2, 0.05}, D_A = 1.0, D_B = 0.5;
 
 // Stats
-int frame = 0, fps = 0, fps_counter = 0, cells_drawn = 0;
-map<string, int *> stats{{"1. FPS: ", &fps}, {"2. Frame: ", &frame}, {"3. Cells Drawn: ", &cells_drawn}};
+int frame = 0, fps = 0, fps_counter = 0;
+map<string, int *> stats{{"1. FPS: ", &fps}, {"2. Frame: ", &frame}};
 Uint32 fps_timer, draw_timer;
 
 // SDL Stuff
@@ -51,23 +51,16 @@ size_t global_work_size[1];
 struct Cell
 {
     float a = 1, b = 0, lap_a = 0, lap_b = 0;
-    int last_c = 255;
 
     void seed_b()
     {
         b = 1.0;
     }
 
-    bool draw(int pos)
+    void draw(int pos)
     {
         const int c = Clamp0255((a - b) * 255);
-        if (last_c != c)
-        {
-            pixels[pos] = SDL_MapRGB(format, Clamp0255(color.r - c), Clamp0255(color.g - c), Clamp0255(color.b - c));
-            last_c = c;
-            return true;
-        }
-        return false;
+        pixels[pos] = SDL_MapRGB(format, Clamp0255(color.r - c), Clamp0255(color.g - c), Clamp0255(color.b - c));
     }
 };
 
@@ -77,20 +70,8 @@ void update()
 {
 
     clEnqueueWriteBuffer(queue, k_cells, CL_TRUE, 0, WIDTH * HEIGHT * sizeof(Cell), cells, 0, NULL, NULL);
-
-    clSetKernelArg(laplace_kernel, 0, sizeof(cl_mem), &k_cells);
-    clSetKernelArg(laplace_kernel, 1, sizeof(int), &WIDTH);
-    clSetKernelArg(laplace_kernel, 2, sizeof(int), &HEIGHT);
-    clSetKernelArg(laplace_kernel, 3, sizeof(cl_mem), &k_weights);
     clEnqueueNDRangeKernel(queue, laplace_kernel, 1, NULL, global_work_size, NULL, 0, NULL, NULL);
-
-    clSetKernelArg(update_kernel, 0, sizeof(cl_mem), &k_cells);
-    clSetKernelArg(update_kernel, 1, sizeof(float), &D_A);
-    clSetKernelArg(update_kernel, 2, sizeof(float), &D_B);
-    clSetKernelArg(update_kernel, 3, sizeof(float), &FEED);
-    clSetKernelArg(update_kernel, 4, sizeof(float), &KILL);
     clEnqueueNDRangeKernel(queue, update_kernel, 1, NULL, global_work_size, NULL, 0, NULL, NULL);
-
     clEnqueueReadBuffer(queue, k_cells, CL_TRUE, 0, WIDTH * HEIGHT * sizeof(Cell), cells, 0, NULL, NULL);
     clFinish(queue);
 
@@ -112,14 +93,10 @@ void update()
 
 void draw_screen()
 {
-    cells_drawn = 0;
     SDL_LockTexture(texture, NULL, (void **)&pixels, &pitch);
 
     for (int pos = 0; pos < WIDTH * HEIGHT; pos++)
-    {
-        if (cells[pos].draw(pos))
-            ++cells_drawn;
-    }
+        cells[pos].draw(pos);
 
     SDL_UnlockTexture(texture);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
@@ -160,11 +137,10 @@ void init_cells()
     }
 }
 
-void InitOpenCL()
+void init_OpenCL()
 {
     clGetPlatformIDs(1, &platform, NULL);
     clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
-
     cl_int status = 0;
 
     context = clCreateContext(NULL, 1, &device, NULL, NULL, &status);
@@ -210,10 +186,21 @@ void InitOpenCL()
     clEnqueueWriteBuffer(queue, k_weights, CL_TRUE, 0, 8 * sizeof(float), weights, 0, NULL, NULL);
     clFinish(queue);
 
+    clSetKernelArg(laplace_kernel, 0, sizeof(cl_mem), &k_cells);
+    clSetKernelArg(laplace_kernel, 1, sizeof(int), &WIDTH);
+    clSetKernelArg(laplace_kernel, 2, sizeof(int), &HEIGHT);
+    clSetKernelArg(laplace_kernel, 3, sizeof(cl_mem), &k_weights);
+
+    clSetKernelArg(update_kernel, 0, sizeof(cl_mem), &k_cells);
+    clSetKernelArg(update_kernel, 1, sizeof(float), &D_A);
+    clSetKernelArg(update_kernel, 2, sizeof(float), &D_B);
+    clSetKernelArg(update_kernel, 3, sizeof(float), &FEED);
+    clSetKernelArg(update_kernel, 4, sizeof(float), &KILL);
+
     global_work_size[0] = WIDTH * HEIGHT;
 }
 
-void InitSDL()
+void init_SDL()
 {
     SDL_Init(SDL_INIT_EVERYTHING);
     win = SDL_CreateWindow("Reaction Diffusion", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, 0);
@@ -353,11 +340,11 @@ int main(int argc, char *argv[])
     cout << "Initializing Cells..." << endl;
     init_cells();
 
-    cout << "Initializing SDL..." << endl;
-    InitSDL();
-
     cout << "Initializing OpenCL..." << endl;
-    InitOpenCL();
+    init_OpenCL();
+
+    cout << "Initializing SDL..." << endl;
+    init_SDL();
 
     fps_timer = SDL_GetTicks();
     draw_timer = SDL_GetTicks();

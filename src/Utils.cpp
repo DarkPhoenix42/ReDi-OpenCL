@@ -1,6 +1,6 @@
-#pragma once
 #include <iostream>
 #include <map>
+#include <cstdint>
 
 using namespace std;
 
@@ -10,9 +10,10 @@ enum Shape
     SQUARE = 1
 };
 
-inline uint8_t Clamp0255(const int c)
+inline uint8_t Clamp0255(const int c) noexcept
 {
-    return (c < 0) ? 0 : ((c > 255) ? 255 : c);
+    return (c < 0) ? 0 : (c > 255) ? 255
+                                   : static_cast<uint8_t>(c);
 }
 
 inline float d_sq(float x1, float y1, float x2, float y2)

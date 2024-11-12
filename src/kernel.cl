@@ -1,6 +1,5 @@
 struct Cell {
   float a, b, lap_a, lap_b;
-  int last_c;
 };
 
 typedef struct Cell KCell;
